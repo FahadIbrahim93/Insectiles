@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required, immutable) - The user's ID
+    //   - bestScore: number (required) - Highest score achieved
+    //   - bestWave: number (required) - Highest wave reached
+    //   - bestCombo: number (required) - Highest combo achieved
+    //   - runs: number (required) - Total number of runs played
+    //   - achievements: list (required) - List of unlocked achievement IDs
+    //   - totalGemsCollected: number (required) - Total gems collected
+    //   - totalKills: number (required) - Total enemies killed
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+       return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+       return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+       return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+    
+    function uidUnchanged() {
+       return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+    
+    function uidNotModified() {
+       return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+    
+    function hasRequiredFields(fields) {
+       return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUserStats(data) {
+      return hasOnlyAllowedFields(['uid', 'bestScore', 'bestWave', 'bestCombo', 'runs', 'achievements', 'totalGemsCollected', 'totalKills']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
+             data.bestScore is number && data.bestScore >= 0 &&
+             data.bestWave is number && data.bestWave >= 0 &&
+             data.bestCombo is number && data.bestCombo >= 0 &&
+             data.runs is number && data.runs >= 0 &&
+             data.achievements is list && data.achievements.size() <= 100 &&
+             data.totalGemsCollected is number && data.totalGemsCollected >= 0 &&
+             data.totalKills is number && data.totalKills >= 0;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserStats(request.resource.data) && uidUnchanged();
+      allow update: if isOwner(userId) && isValidUserStats(request.resource.data) && uidNotModified();
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "UserStats": {
+      "title": "UserStats",
+      "description": "Stores the user's best run stats and achievements.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's ID."
+        },
+        "bestScore": {
+          "type": "number",
+          "description": "Highest score achieved."
+        },
+        "bestWave": {
+          "type": "number",
+          "description": "Highest wave reached."
+        },
+        "bestCombo": {
+          "type": "number",
+          "description": "Highest combo achieved."
+        },
+        "runs": {
+          "type": "number",
+          "description": "Total number of runs played."
+        },
+        "achievements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of unlocked achievement IDs."
+        },
+        "totalGemsCollected": {
+          "type": "number",
+          "description": "Total gems collected across all runs."
+        },
+        "totalKills": {
+          "type": "number",
+          "description": "Total enemies killed across all runs."
+        }
+      },
+      "required": ["uid", "bestScore", "bestWave", "bestCombo", "runs", "achievements", "totalGemsCollected", "totalKills"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserStats" },
+      "description": "Stores individual user statistics and achievements."
+    }
+  }
+}
