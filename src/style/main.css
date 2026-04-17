@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --neon-green: #00ff88;
+  --neon-gold: #ffd700;
+  --neon-red: #ff4444;
+  --neon-purple: #aa66ff;
+  --bg-dim: rgba(0, 0, 0, 0.92);
+  --glass-bg: rgba(0, 0, 10, 0.95);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  user-select: none;
+  touch-action: none;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+/* ── Screen System ── */
+.scr {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+
+.scr.on {
+  display: flex;
+}
+
+#sMenu { background: var(--bg-dim); }
+#sClass { background: var(--bg-dim); overflow-y: auto; padding: 40px 20px; justify-content: flex-start; }
+#sHive { background: var(--glass-bg); overflow-y: auto; padding: 40px 20px; justify-content: flex-start; }
+#sLvl { background: var(--glass-bg); z-index: 200; }
+#sGo { background: var(--bg-dim); z-index: 150; }
+#sPause { background: rgba(0, 0, 10, 0.85); z-index: 180; }
+#sDiff { background: var(--bg-dim); z-index: 190; }
+
+/* ── Typography ── */
+.gtitle {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  letter-spacing: 8px;
+  color: var(--neon-green);
+  text-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+  text-transform: uppercase;
+}
+
+.gsub {
+  color: #44aa77;
+  letter-spacing: 5px;
+  opacity: 0.75;
+  font-size: 0.8rem;
+}
+
+/* ── Buttons ── */
+.btn {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  padding: 14px 40px;
+  background: transparent;
+  border: 2px solid var(--neon-green);
+  color: var(--neon-green);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+  margin: 8px;
+  text-transform: uppercase;
+}
+
+.btn:hover, .btn:active {
+  background: rgba(0, 255, 136, 0.15);
+  box-shadow: 0 0 25px rgba(0, 255, 136, 0.3);
+  transform: scale(1.05);
+}
+
+.btn.red { border-color: var(--neon-red); color: var(--neon-red); }
+.btn.red:hover { background: rgba(255, 68, 68, 0.15); }
+
+.btn.gold { border-color: var(--neon-gold); color: var(--neon-gold); }
+.btn.gold:hover { background: rgba(255, 215, 0, 0.15); }
+
+.btn.purple { border-color: var(--neon-purple); color: var(--neon-purple); }
+.btn.purple:hover { background: rgba(170, 102, 255, 0.15); }
+
+/* ── HUD ── */
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 15px 20px;
+  display: none;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.brow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.btrk {
+  width: 200px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bfill { height: 100%; transition: width 0.1s ease-out; }
+.bhp { background: linear-gradient(90deg, #cc2222, #ff5555); }
+.bxp { background: linear-gradient(90deg, #00bb55, #55ffaa); }
+.bsh { background: linear-gradient(90deg, #2255cc, #55aaff); }
+
+/* ... (Remaining styles from proto.html refactored) ... */
