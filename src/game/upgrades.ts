@@ -1,4 +1,33 @@
-export const UPGRADE_DEFS = [
+export type UpgradeRarity = 'common' | 'rare' | 'legendary';
+
+export interface UpgradeDefinition {
+  id: string;
+  icon: string;
+  name: string;
+  desc: string;
+  maxLevel: number;
+  rarity: UpgradeRarity;
+  costs: number[];
+  value: number;
+}
+
+export interface RarityDefinition {
+  label: string;
+  weight: number;
+  costMult: number;
+  effectMult: number;
+}
+
+export interface SynergyDefinition {
+  id: string;
+  name: string;
+  icon: string;
+  tier: 'bronze' | 'silver' | 'gold';
+  desc: string;
+  requires: Record<string, number>;
+}
+
+export const UPGRADE_DEFS: UpgradeDefinition[] = [
   { id: 'rate_1', icon: '⚔️', name: 'FANG SPEED', desc: 'Attack faster between strikes', maxLevel: 5, rarity: 'common', costs: [100, 250, 500, 900, 1500], value: 0.1 },
   { id: 'spd_1', icon: '💨', name: 'SWIFT LEGS', desc: 'Increased movement velocity', maxLevel: 5, rarity: 'common', costs: [100, 250, 500, 900, 1500], value: 20 },
   { id: 'hp_1', icon: '❤️', name: 'EXOSKELETON', desc: 'Reinforced chitin plating', maxLevel: 5, rarity: 'common', costs: [120, 280, 550, 950, 1600], value: 20 },
@@ -14,13 +43,13 @@ export const UPGRADE_DEFS = [
   { id: 'secondWind_1', icon: '🦋', name: 'SECOND WIND', desc: 'Revive once per run with 50% HP on death', maxLevel: 1, rarity: 'legendary', costs: [1500], value: 1 },
 ];
 
-export const RARITY: Record<string, any> = {
+export const RARITY: Record<UpgradeRarity, RarityDefinition> = {
   common: { label: 'COMMON', weight: 60, costMult: 1.0, effectMult: 1.0 },
   rare: { label: 'RARE', weight: 28, costMult: 1.4, effectMult: 1.5 },
   legendary: { label: 'LEGENDARY', weight: 12, costMult: 2.0, effectMult: 2.2 },
 };
 
-export const SYNERGY_DEFS = [
+export const SYNERGY_DEFS: SynergyDefinition[] = [
   { id: 'berserker', name: 'BERSERKER', icon: '🔥', tier: 'bronze', desc: '+20% attack speed & +15% damage', requires: { critChance: 1, comboTime: 1 } },
   { id: 'juggernaut', name: 'JUGGERNAUT', icon: '🛡️', tier: 'bronze', desc: '+30 max HP & +10% damage reduction', requires: { maxHp: 2, regen: 1 } },
   { id: 'phantom', name: 'PHANTOM', icon: '👻', tier: 'bronze', desc: '+25% move speed & longer combo window', requires: { movSpeed: 2, comboTime: 1 } },
