@@ -1,5 +1,4 @@
-import { useEffect, useRef } from 'react';
-import { Log, initAudio, playTone, sfxAttack, sfxKill, sfxHit, sfxAbility } from './audio';
+import { initAudio, sfxAttack, sfxKill, sfxHit, sfxAbility } from './audio';
 import { player, HERO_CLASSES } from './player';
 import { enemies, ENEMY_TYPES, setEnemies } from './enemies';
 import { particles, spawnParticles } from './particles';

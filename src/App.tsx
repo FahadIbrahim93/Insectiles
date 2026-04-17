@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { initGame, startGame, getPlayerState, resumeGame, setAutoAttack as setEngineAutoAttack } from './game/engine';
 import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged } from './firebase';
+import type { User } from 'firebase/auth';
 import { loadUserData, saveUserData, userData } from './store';
 import { HERO_CLASSES, player } from './game/player';
 import { UPGRADE_DEFS } from './game/upgrades';
+import type { UpgradeDefinition } from './game/upgrades';
+import { applyUpgradeToPlayer } from './game/upgradeEffects';
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [gameState, setGameState] = useState('loading'); // loading, title, classselect, playing, gameover, upgrading
   const [selectedClass, setSelectedClass] = useState(HERO_CLASSES[0]);
   const [score, setScore] = useState(0);
@@ -19,7 +22,7 @@ export default function App() {
   const [maxXp, setMaxXp] = useState(100);
   const [level, setLevel] = useState(1);
   const [upgradePoints, setUpgradePoints] = useState(0);
-  const [availableUpgrades, setAvailableUpgrades] = useState<any[]>([]);
+  const [availableUpgrades, setAvailableUpgrades] = useState<UpgradeDefinition[]>([]);
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -43,10 +46,10 @@ export default function App() {
           
           if (user) {
             // Save high score
-            if (finalScore > (userData.highScore || 0)) {
-              userData.highScore = finalScore;
-              userData.maxWave = Math.max(userData.maxWave || 0, finalWave);
-              await saveUserData(user.uid, userData);
+            if (finalScore > (userData.bestScore || 0)) {
+              userData.bestScore = finalScore;
+              userData.bestWave = Math.max(userData.bestWave || 0, finalWave);
+              await saveUserData(user.uid);
             }
           }
         },
@@ -142,26 +145,9 @@ export default function App() {
     setAvailableUpgrades(shuffled.slice(0, 3));
   };
 
-  const handleSelectUpgrade = (upgrade: any) => {
-    // Apply upgrade logic
-    console.log("Selected upgrade:", upgrade.name);
-    
-    // Apply upgrade logic here
-    if (upgrade.id.startsWith('dmg_')) {
-      player.attackDamage += upgrade.value;
-    } else if (upgrade.id.startsWith('spd_')) {
-      player.speed += upgrade.value;
-    } else if (upgrade.id.startsWith('hp_')) {
-      player.maxHp += upgrade.value;
-      player.hp += upgrade.value;
-    } else if (upgrade.id.startsWith('rate_')) {
-      player.attackRate *= (1 - upgrade.value);
-    } else if (upgrade.id.startsWith('range_')) {
-      player.attackRange += upgrade.value;
-    } else if (upgrade.id.startsWith('heal_')) {
-      player.hp = Math.min(player.maxHp, player.hp + upgrade.value);
-    }
-    
+  const handleSelectUpgrade = (upgrade: UpgradeDefinition) => {
+    applyUpgradeToPlayer(player, upgrade);
+
     // Resume game
     setGameState('playing');
     resumeGame();
@@ -405,7 +391,7 @@ export default function App() {
           <div>WAVES SURVIVED: <span id="go-wave" style={{ color: 'var(--c-accent)' }}>{wave}</span></div>
           {user && userData && (
             <div style={{ marginTop: '10px', fontSize: '14px', color: '#888' }}>
-              HIGH SCORE: {userData.highScore || 0}
+              HIGH SCORE: {userData.bestScore || 0}
             </div>
           )}
         </div>
