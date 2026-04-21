@@ -4,7 +4,7 @@
 
 **Insectiles: Apex Swarm** is a browser-based survival roguelite game by Hope Theory (@hopetheory__). Players control insectoid characters through procedurally generated waves, leveling up with tactical upgrade choices.
 
-**Status:** Alpha — UI shell built, PixiJS game engine NOT yet wired. The state machine and HUD are functional; actual gameplay rendering is stubbed.
+**Status:** Alpha — PixiJS 8 game engine fully wired. WASD movement, enemy AI, camera follow, grid rendering, wave system. Gameplay functional.
 
 **Tech Stack:**
 - TypeScript 6.x + Vite 8.x (build)
@@ -33,14 +33,22 @@ src/
 │   └── Theme.tsx        # Design tokens (colors, fonts)
 ├── data/
 │   └── constants.ts    # Classes, difficulties, upgrades data
-├── core/                # ⚠️ EXCLUDED from build — PixiJS engine stub
-│   ├── Engine.ts
-│   ├── GameStateManager.ts
-│   └── ...
+├── core/                # PixiJS 8 game engine
+│   ├── Engine.ts        # Game loop, entity management, state
+│   ├── GameBridge.ts    # React ↔ Engine bidirectional bridge
+│   ├── GameStateManager.ts  # Singleton game state + events
+│   ├── Ticker.ts        # Fixed timestep game ticker
+│   └── types.ts         # Shared TypeScript interfaces
 ├── entities/
-│   ├── Player.ts        # ⚠️ EXCLUDED
-│   └── Enemy.ts         # ⚠️ EXCLUDED
-└── systems/             # ⚠️ EXCLUDED
+│   ├── Player.ts        # Player entity with stats, abilities, trail
+│   └── Enemy.ts         # Enemy with flocking AI, death pool
+└── systems/
+    ├── RenderingSystem.ts   # PixiJS 8 Graphics rendering, camera
+    ├── MovementSystem.ts   # Player movement + enemy AI
+    ├── WaveSystem.ts       # Wave spawning, difficulty scaling
+    ├── CollisionSystem.ts  # Circle-circle collision detection
+    ├── ParticleSystem.ts   # Death particles, upgrade sparkles
+    └── Pool.ts             # Object pooling for enemies
 ```
 
 **Entry Points:**
@@ -89,17 +97,27 @@ src/
 
 ---
 
-## 5. CURRENT BLOCKERS
+## 5. KNOWN ISSUES & NEXT STEPS
 
-1. **PixiJS Engine NOT Wired** — src/core, entities, systems excluded from tsconfig to prevent build errors. Actual game rendering is a blank canvas.
+**Done:**
+- ✅ PixiJS 8 engine fully wired to React
+- ✅ WASD movement with InputManager
+- ✅ Enemy AI (flocking/separation behavior)
+- ✅ Camera follows player
+- ✅ Wave spawning system
+- ✅ Collision detection (damage + death)
+- ✅ Particle effects (death bursts, upgrade sparkles)
+- ✅ Game state → React HUD sync
 
-2. **No Game Loop** — GameCanvas component is a placeholder. The `setTimeout` hack simulates "PLAYING" state but doesn't render enemies/waves.
-
-3. **Upgrade System is Mock** — LevelUp choices are hardcoded arrays, not connected to actual player stats modifications.
-
-4. **Missing UI Screens** — Leaderboard and Settings screens referenced but not implemented.
-
-5. **Pause State** — Pause overlay shows but doesn't actually pause game logic.
+**To do:**
+- [ ] Mobile touch controls
+- [ ] Boss wave system
+- [ ] Sound/music integration
+- [ ] Leaderboard persistence (Supabase)
+- [ ] Settings screen
+- [ ] Leaderboard screen
+- [ ] Pause actually pauses game logic
+- [ ] Upgrade system wired to actual player stats
 
 ---
 
@@ -120,3 +138,32 @@ src/
 - If stuck on same action 3x, stop and report
 - Each PR: one focused change, tested before continuing
 - Keep CLAUDE.md updated when project structure changes
+
+---
+
+## 7. KEY COMMANDS
+
+- `npm run dev` — start dev server (use Windows cmd.exe for Node.js compatibility)
+- `npm run build` — production build
+- `npx tsc --noEmit` — type check
+
+**Dev server from WSL:** `cmd.exe /c "cd /d H:\DevJourney\Projects\Insectiles && npm run dev"`
+**Git push from WSL:** `cmd.exe /c "cd /d H:\DevJourney\Projects\Insectiles && git push"` (WSL git lacks GitHub credentials — use Windows git via cmd.exe)
+
+---
+
+## 8. COMMON PITFALLS
+
+### Camera starts at (0,0)
+Player starts at (1600, 1600). If camera initializes at (0,0), everything renders off-screen for ~10 frames. Always initialize camera to `WORLD_W/2, WORLD_H/2`.
+
+### InputManager.update() must be called every frame
+The movement system reads from `input.state`, which is only populated by `InputManager.update()`. Without this call in Engine.update(), the player cannot move.
+
+### Grid rendering — use PixiJS v8 Graphics API
+```typescript
+// Correct:
+g.moveTo(x1, y1).lineTo(x2, y2).stroke({ color: 0x00ff88, alpha: 0.04, width: 1 });
+// Wrong (v7 API):
+g.lineStyle(1, 0x00ff88, 0.04); g.moveTo(x1, y1); g.lineTo(x2, y2);
+```
