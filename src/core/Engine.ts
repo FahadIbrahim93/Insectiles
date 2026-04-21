@@ -1,6 +1,5 @@
 import { Application } from 'pixi.js';
 import { GameTicker } from './Ticker';
-import { StateMachine } from './StateMachine';
 import { SpatialGrid } from '../systems/SpatialGrid';
 import { MovementSystem } from '../systems/MovementSystem';
 import { RenderingSystem } from '../systems/RenderingSystem';
@@ -8,7 +7,6 @@ import { ParticleSystem } from '../systems/ParticleSystem';
 import { CombatSystem } from '../systems/CombatSystem';
 import { WaveSystem } from '../systems/WaveSystem';
 import { AbilitySystem } from '../systems/AbilitySystem';
-import { UIManager } from '../systems/UIManager';
 import { AudioSystem } from '../systems/AudioSystem';
 import { InputManager } from '../systems/InputManager';
 import { Pool, makeProjectile, resetProjectile, makeGem, resetGem } from '../systems/Pool';
@@ -16,6 +14,7 @@ import { Player, getEffectiveDmg } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
 import { GAME_STATE } from './GameStateManager';
 import { BRIDGE } from './GameBridge';
+import { CLASSES, ENEMIES } from '../data/constants';
 
 export interface EngineConfig {
     containerId: string;
@@ -35,7 +34,6 @@ export class Engine {
     private combat!: CombatSystem;
     private waves!: WaveSystem;
     private abilities!: AbilitySystem;
-    private ui!: UIManager;
     private audio = new AudioSystem();
     private input = new InputManager();
 
@@ -55,7 +53,12 @@ export class Engine {
     constructor() {
         this.ticker = new GameTicker(this.update.bind(this));
         this.movement = new MovementSystem(this.grid, this.input);
-        this.waves = new WaveSystem(this.state as any, (e) => this.enemies.push(e));
+        this.waves = new WaveSystem(this.state as any, (e) => {
+            this.enemies.push(e);
+            const edef = ENEMIES[e.enemyType] || ENEMIES['ant'];
+            const color = parseInt(edef.col.replace('#', '0x'), 16);
+            this.renderer.registerEntity(e.id, color, e.r);
+        });
     }
 
     /**
@@ -102,12 +105,34 @@ export class Engine {
         });
     }
 
+    /**
+     * Set the player entity reference after external creation.
+     */
+    public setPlayer(player: Player): void {
+        this.player = player;
+        const cls = CLASSES[player.classId] || CLASSES['mantis'];
+        const color = parseInt(cls.col.replace('#', '0x'), 16);
+        this.renderer.registerEntity('player', color, player.r);
+    }
+
+    /**
+     * Destroy the engine and release all resources.
+     */
+    public destroy(): void {
+        this.app.destroy(true, { children: true });
+        this.input.destroy();
+        this.enemies = [];
+        this.player = null;
+        console.log('[ENGINE] Destroyed');
+    }
+
     private update(dt: number): void {
         if (!this.state.is('PLAYING', 'BOSS')) return;
 
         if (this.player) {
             const dt60 = dt * 60; // Normalize for systems expecting 1/60th pulse
             
+            this.input.update();
             this.movement.updatePlayer(this.player, dt, this.obstacles);
             this.movement.updateEnemies(this.enemies, this.player, dt, this.obstacles);
             this.combat.processPlayerAttacks(this.player, dt);
@@ -116,9 +141,9 @@ export class Engine {
             
             // Push to Bridge
             BRIDGE.updatePlayer(
-                this.player.hp, this.player.maxHp, 
+                this.player.hp, this.player.stats.maxHp, 
                 0, 100, // XP logic to be refined
-                this.player.shield, this.player.maxHp * 0.5,
+                this.player.shield, this.player.stats.maxHp * 0.5,
                 1
             );
             BRIDGE.updateWave(this.waves.currentWave, "00:00", 0);

@@ -40,7 +40,7 @@ export class GameStateManager {
   get boss(): BossState | null { return this._bossState; }
   get difficulty(): DifficultyDef | null { return this._difficulty; }
   get classDef(): ClassDef | null { return this._classDef; }
-  get isPaused(): boolean { return this._state === 'PAUSED'; }
+  get isPaused(): boolean { return this._state === 'PAUSE'; }
   get isGameOver(): boolean { return this._state === 'GAME_OVER'; }
   get isPlaying(): boolean { return this._state === 'PLAYING' || this._state === 'BOSS'; }
 
@@ -115,7 +115,6 @@ export class GameStateManager {
         break;
     }
 
-    // Unpause time tracking
     if (from === 'PAUSE' && to !== 'PAUSE') {
       this._totalPausedTime += Date.now() - this._pausedTime;
     }
@@ -209,6 +208,7 @@ export class GameStateManager {
       damageDealt: 0,
       timeAlive: 0,
       dead: false,
+      trail: [],
     };
 
     console.log(`[Game] Started - Class: ${this._classDef.name}, Diff: ${this._difficulty.name}`);

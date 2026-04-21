@@ -69,9 +69,9 @@ export class CombatSystem {
     
     // Spawn Gems
     const g = this.pools.gems.get();
-    g.x = e.x; g.y = e.y; g.value = e.xp; g.color = e.elite ? '#ffd700' : '#00ff88';
+    g.x = e.x; g.y = e.y; g.val = e.xp; g.col = e.elite ? '#ffd700' : '#00ff88';
     g.r = e.elite ? 7 : 5;
-    g.collected = false;
+    g.active = true;
     
     this.audio.play('death');
   }

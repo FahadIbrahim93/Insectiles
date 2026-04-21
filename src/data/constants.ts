@@ -51,6 +51,7 @@ export const ETYPES: Record<string, EnemyTypeDef> = {
   shaman:  { col:'#cc00ff', r:15, hp:58,  spd:52,  dmg:8,  xp:11, sc:32, elite:true,  ranged:false },
   phantom: { col:'#4488ff', r:13, hp:35,  spd:115, dmg:14, xp:12, sc:38, elite:true,  ranged:false },
 };
+export const ENEMIES = ETYPES;
 
 // ─── Boss Definitions ──────────────────────────────────────────────
 export interface BossPhase { pct: number; label: string; sr: number; spd?: number; }
@@ -66,11 +67,31 @@ export const BOSSES: BossDef[] = [
     phases:[{pct:1,label:'Phase I — Invocation',sr:1.5},{pct:.5,label:'Phase II — Corruption',sr:.65,spd:1.5},{pct:.25,label:'Phase III — OBLITERATION',sr:.3,spd:2.1}] },
 ];
 
+// Wave definitions for progression
+export interface Wave {
+  wave: number;
+  enemies: string;
+  boss?: string;
+  duration: number;
+}
+export const WAVES: Wave[] = [
+  { wave:1,  enemies:'ant:5',           duration:20 },
+  { wave:2,  enemies:'ant:6,beetle:2',  duration:22 },
+  { wave:3,  enemies:'ant:4,beetle:4', duration:24 },
+  { wave:4,  enemies:'beetle:6',       duration:25 },
+  { wave:5,  enemies:'beetle:5,soldier:1', boss:'hiveMother', duration:60 },
+  { wave:6,  enemies:'ant:8,hornet:2', duration:26 },
+  { wave:7,  enemies:'hornet:5,spitter:2', duration:28 },
+  { wave:8,  enemies:'hornet:4,spitter:3', duration:30 },
+  { wave:9,  enemies:'beetle:5,soldier:2,shaman:1', duration:32 },
+  { wave:10, enemies:'soldier:3,hornet:3,phantom:2', boss:'voidQueen', duration:90 },
+];
+
 // ─── Upgrades ──────────────────────────────────────────────────────
 export interface UpgradeDef {
   id: string; name: string; icon: string; maxLv: number;
   syn: string | null; desc: (lv: number) => string;
-  apply: (p: PlayerStats) => void;
+  apply: (p: RuntimePlayerStats) => void;
 }
 export const UPGRADES: UpgradeDef[] = [
   { id:'dmg',    name:'Venom Fang',      icon:'⚔️', maxLv:5, syn:'venomLord',  desc:l=>`+${l*20}% Damage`,          apply:p=>{p.dmgMult+=.2} },
@@ -116,13 +137,13 @@ export const HIVE_UPGRADES: HiveUpgradeDef[] = [
 ];
 
 // ─── Player Stats (mutable runtime state) ─────────────────────────
-export interface PlayerStats {
+export interface RuntimePlayerStats {
   dmgMult: number; asMult: number; spdMult: number; cdMult: number;
   bonusHp: number; lifesteal: number; thorns: number; multiStrike: number;
   poisonDps: number; revive: boolean; reviveUsed: boolean; critChance: number;
   aoeRadius: number; gemMagnet: number; regen: number; xpMult: number;
 }
-export function defaultPlayerStats(hive: { hp:number; dmg:number; spd:number; crit:number; xp:number }): PlayerStats {
+export function defaultPlayerStats(hive: { hp:number; dmg:number; spd:number; crit:number; xp:number }): RuntimePlayerStats {
   return {
     dmgMult:   1 + hive.dmg * 0.05,
     asMult:    1,

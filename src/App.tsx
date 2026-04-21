@@ -7,51 +7,107 @@ import { GameHUD } from './ui/GameHUD';
 import { BossHUD } from './ui/BossHUD';
 import { LevelUp } from './ui/LevelUp';
 import { GameOver } from './ui/GameOver';
-import { GAME_STATE } from './core/GameStateManager';
 import { CLASSES, DIFFS } from './data/constants';
-import './style/main.css';
+import { GAME_STATE } from './core/GameStateManager';
+import { BRIDGE } from './core/GameBridge';
+import { Engine } from './core/Engine';
+import { makePlayer } from './entities/Player';
 
-// Game Canvas Component
-const GameCanvas: React.FC<{ 
+type Screen = 'MENU' | 'CLASS_SELECT' | 'DIFFICULTY' | 'PLAYING' | 'BOSS' | 'LEVEL_UP' | 'PAUSE' | 'GAME_OVER';
+
+// ─── Game Canvas ────────────────────────────────────────────────────────────
+
+interface GameCanvasProps {
   onGameStateChange: (state: string) => void;
   playerClass: string;
   difficulty: string;
-}> = ({ onGameStateChange, playerClass, difficulty }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  gameState: Screen;
+}
 
+const GameCanvas: React.FC<GameCanvasProps> = ({
+  onGameStateChange,
+  playerClass,
+  difficulty,
+  gameState,
+}) => {
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const engineRef = useRef<Engine | null>(null);
+  const containerId = 'pixi-container';
+  const [engineReady, setEngineReady] = useState(false);
+
+  // Start engine when entering PLAYING or BOSS screen
   useEffect(() => {
-    // Initialize PixiJS game here
-    // For now, just a placeholder that reports playing state
-    const timer = setTimeout(() => {
-      onGameStateChange('PLAYING');
-    }, 2000);
+    const shouldRun = gameState === 'PLAYING' || gameState === 'BOSS';
+    const hasCanvas = canvasRef.current !== null;
 
-    return () => clearTimeout(timer);
-  }, [playerClass, difficulty]);
+    if (!shouldRun || !hasCanvas) return;
+
+    const startEngine = async () => {
+      const engine = new Engine();
+      engineRef.current = engine;
+
+      try {
+        await engine.init({
+          containerId,
+          backgroundColor: 0x020408,
+        });
+
+        const player = makePlayer(playerClass);
+        engine.setPlayer(player);
+        engine.start();
+        setEngineReady(true);
+        console.log('[GameCanvas] PixiJS engine started');
+      } catch (err) {
+        console.error('[GameCanvas] Engine init failed:', err);
+      }
+    };
+
+    startEngine();
+
+    return () => {
+      if (engineRef.current) {
+        engineRef.current.destroy();
+        engineRef.current = null;
+        setEngineReady(false);
+        console.log('[GameCanvas] PixiJS engine destroyed');
+      }
+    };
+  }, [gameState, playerClass, difficulty]);
+
+  // Listen for game-over events from the bridge
+  useEffect(() => {
+    const onGameOver = (stats: any) => {
+      onGameStateChange('GAME_OVER');
+    };
+    BRIDGE.on('GAME_OVER', onGameOver);
+    return () => {
+      BRIDGE.off('GAME_OVER', onGameOver);
+    };
+  }, [onGameStateChange]);
 
   return (
-    <canvas 
+    <div
       ref={canvasRef}
-      id="game-canvas"
+      id={containerId}
       style={{
         position: 'absolute',
         top: 0,
         left: 0,
         width: '100%',
         height: '100%',
-        zIndex: 1
+        zIndex: 1,
       }}
     />
   );
 };
 
-// Main App
+// ─── Main App ────────────────────────────────────────────────────────────────
+
 export const App: React.FC = () => {
-  const [gameState, setGameState] = useState<string>('MENU');
+  const [gameState, setGameState] = useState<Screen>('MENU');
   const [selectedClass, setSelectedClass] = useState<string>('mantis');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('normal');
-  
-  // Game data
+
   const [playerData, setPlayerData] = useState({
     hp: 100,
     maxHp: 100,
@@ -64,48 +120,103 @@ export const App: React.FC = () => {
     wave: 1,
     score: 0,
     kills: 0,
-    combo: 0
+    combo: 0,
   });
-  
+
   const [bossData, setBossData] = useState({
     name: '',
     hp: 0,
     maxHp: 0,
-    phase: 0
+    phase: 0,
   });
 
   const [upgradeChoices, setUpgradeChoices] = useState<any[]>([]);
   const [finalStats, setFinalStats] = useState({
     score: 0,
     waves: 0,
-    kills: 0
+    kills: 0,
   });
 
-  // Handle state transitions
+  // Wire GAME_STATE changes into React state
+  useEffect(() => {
+    const unsub = GAME_STATE.onStateChange((_prev, next) => {
+      setGameState(next as Screen);
+    });
+    return unsub;
+  }, []);
+
+  // Forward React state changes back into GAME_STATE so engine stays in sync
+  useEffect(() => {
+    const handler = (next: Screen) => {
+      const stateMap: Partial<Record<Screen, string>> = {
+        MENU: 'MENU',
+        CLASS_SELECT: 'CLASS_SELECT',
+        DIFFICULTY: 'DIFFICULTY',
+        PLAYING: 'PLAYING',
+        BOSS: 'BOSS',
+        LEVEL_UP: 'LEVEL_UP',
+        PAUSE: 'PAUSE',
+        GAME_OVER: 'GAME_OVER',
+      };
+      const stateId = stateMap[next];
+      if (stateId && !GAME_STATE.is(stateId as any)) {
+        GAME_STATE.transition(stateId as any);
+      }
+    };
+    // Sync on mount so initial state matches
+    handler(gameState);
+  }, [gameState]);
+
+  // Listen for real game updates from Engine via Bridge
+  useEffect(() => {
+    const onPlayerUpdate = (data: any) =>
+      setPlayerData((prev) => ({ ...prev, ...data }));
+
+    const onWaveUpdate = (data: any) =>
+      setPlayerData((prev) => ({ ...prev, ...data }));
+
+    const onBossSpawn = (data: any) =>
+      setBossData({ name: data.name || 'BOSS', hp: data.hp, maxHp: data.maxHp, phase: data.phase });
+
+    const onLevelUp = (choices: any[]) => {
+      setUpgradeChoices(choices);
+      setGameState('LEVEL_UP');
+    };
+
+    BRIDGE.on('PLAYER_UPDATE', onPlayerUpdate);
+    BRIDGE.on('WAVE_UPDATE', onWaveUpdate);
+    BRIDGE.on('BOSS_SPAWN', onBossSpawn);
+    BRIDGE.on('LEVEL_UP', onLevelUp);
+
+    return () => {
+      BRIDGE.off('PLAYER_UPDATE', onPlayerUpdate);
+      BRIDGE.off('WAVE_UPDATE', onWaveUpdate);
+      BRIDGE.off('BOSS_SPAWN', onBossSpawn);
+      BRIDGE.off('LEVEL_UP', onLevelUp);
+    };
+  }, []);
+
+  // ─── Handlers ──────────────────────────────────────────────────────────────
+
   const handleStart = useCallback(() => {
     GAME_STATE.setDifficulty(selectedDifficulty);
     GAME_STATE.setClass(selectedClass);
-    GAME_STATE.transition('CLASS_SELECT');
     setGameState('CLASS_SELECT');
   }, [selectedDifficulty, selectedClass]);
 
   const handleClasses = useCallback(() => {
-    GAME_STATE.transition('CLASS_SELECT');
     setGameState('CLASS_SELECT');
   }, []);
 
-  const handleDifficultySelect = useCallback(() => {
-    GAME_STATE.transition('PLAYING', { classId: selectedClass, diffId: selectedDifficulty });
-    setGameState('PLAYING');
-  }, [selectedClass, selectedDifficulty]);
-
   const handleClassSelect = useCallback((classId: string) => {
     setSelectedClass(classId);
-    GAME_STATE.transition('DIFFICULTY');
+    GAME_STATE.setClass(classId);
     setGameState('DIFFICULTY');
   }, []);
 
   const handleStartGame = useCallback(() => {
+    GAME_STATE.setDifficulty(selectedDifficulty);
+    GAME_STATE.setClass(selectedClass);
     GAME_STATE.transition('PLAYING', { classId: selectedClass, diffId: selectedDifficulty });
     setGameState('PLAYING');
   }, [selectedClass, selectedDifficulty]);
@@ -120,8 +231,7 @@ export const App: React.FC = () => {
     }
   }, [gameState]);
 
-  const handleLevelUp = useCallback((id: string) => {
-    // Apply upgrade choice logic
+  const handleLevelUp = useCallback(() => {
     GAME_STATE.transition('PLAYING');
     setGameState('PLAYING');
   }, []);
@@ -131,7 +241,7 @@ export const App: React.FC = () => {
     setFinalStats({
       score: playerData.score,
       waves: playerData.wave,
-      kills: playerData.kills
+      kills: playerData.kills,
     });
     setGameState('GAME_OVER');
   }, [playerData]);
@@ -140,65 +250,18 @@ export const App: React.FC = () => {
     GAME_STATE.transition('MENU');
     setGameState('MENU');
     setPlayerData({
-      hp: 100,
-      maxHp: 100,
-      shield: 0,
-      maxShield: 0,
-      xp: 0,
-      xpToNext: 24,
-      level: 1,
-      time: 0,
-      wave: 1,
-      score: 0,
-      kills: 0,
-      combo: 0
+      hp: 100, maxHp: 100, shield: 0, maxShield: 0,
+      xp: 0, xpToNext: 24, level: 1, time: 0,
+      wave: 1, score: 0, kills: 0, combo: 0,
     });
   }, []);
 
-  // Listen for game state changes
-  useEffect(() => {
-    GAME_STATE.onStateChange((prev, next) => {
-      setGameState(next);
-    });
-  }, []);
+  // ─── Render ─────────────────────────────────────────────────────────────────
 
-  // Listen for real game updates from Engine via Bridge
-  useEffect(() => {
-    const onPlayerUpdate = (data: any) => setPlayerData(prev => ({ ...prev, ...data }));
-    const onWaveUpdate = (data: any) => setPlayerData(prev => ({ ...prev, ...data }));
-    
-    BRIDGE.on('PLAYER_UPDATE', onPlayerUpdate);
-    BRIDGE.on('WAVE_UPDATE', onWaveUpdate);
-    
-    return () => {
-      BRIDGE.off('PLAYER_UPDATE', onPlayerUpdate);
-      BRIDGE.off('WAVE_UPDATE', onWaveUpdate);
-    };
-  }, []);
-
-  // Check for level up
-  useEffect(() => {
-    if (playerData.xp >= playerData.xpToNext && gameState === 'PLAYING') {
-      setGameState('LEVEL_UP');
-      // Mock upgrade choices
-      setUpgradeChoices([
-        { id: 'dmg', name: 'Venom Fang', desc: '+20% Damage', icon: '⚔️' },
-        { id: 'as', name: 'Frenzy Glands', desc: '+15% Attack Speed', icon: '⚡' },
-        { id: 'hp', name: 'Iron Chitin', desc: '+35 Max HP', icon: '🛡' }
-      ]);
-    }
-  }, [playerData.xp, playerData.xpToNext, gameState]);
-
-  // Render based on game state
   const renderContent = () => {
     switch (gameState) {
       case 'MENU':
-        return (
-          <Menu 
-            onStart={handleStart}
-            onClasses={handleClasses}
-          />
-        );
+        return <Menu onStart={handleStart} onClasses={handleClasses} />;
 
       case 'CLASS_SELECT':
         return (
@@ -206,10 +269,7 @@ export const App: React.FC = () => {
             classes={CLASSES}
             selected={selectedClass}
             onSelect={handleClassSelect}
-            onBack={() => {
-              GAME_STATE.transition('MENU');
-              setGameState('MENU');
-            }}
+            onBack={() => setGameState('MENU')}
           />
         );
 
@@ -222,26 +282,23 @@ export const App: React.FC = () => {
               setSelectedDifficulty(diffId);
               handleStartGame();
             }}
-            onBack={() => {
-              GAME_STATE.transition('CLASS_SELECT');
-              setGameState('CLASS_SELECT');
-            }}
+            onBack={() => setGameState('CLASS_SELECT')}
           />
         );
 
       case 'PLAYING':
         return (
           <>
-            <GameCanvas 
+            <GameCanvas
               onGameStateChange={(state) => {
                 if (state === 'GAME_OVER') handleGameOver();
               }}
               playerClass={selectedClass}
               difficulty={selectedDifficulty}
+              gameState={gameState}
             />
-            <GameHUD 
+            <GameHUD
               {...playerData}
-              timer={playerData.time.toString()}
               abilities={[{ name: 'ABILITY', cooldown: 0, maxCooldown: 5, ready: true }]}
             />
           </>
@@ -250,13 +307,14 @@ export const App: React.FC = () => {
       case 'BOSS':
         return (
           <>
-            <GameCanvas 
+            <GameCanvas
               onGameStateChange={() => {}}
               playerClass={selectedClass}
               difficulty={selectedDifficulty}
+              gameState={gameState}
             />
             <GameHUD {...playerData} abilities={[]} />
-            <BossHUD 
+            <BossHUD
               name={bossData.name || 'BOSS'}
               hp={bossData.hp}
               maxHp={bossData.maxHp}
@@ -281,31 +339,31 @@ export const App: React.FC = () => {
             waves={finalStats.waves}
             kills={finalStats.kills}
             onRestart={handleRestart}
-            onMenu={() => {
-              GAME_STATE.transition('MENU');
-              setGameState('MENU');
-            }}
+            onMenu={() => setGameState('MENU')}
           />
         );
 
       case 'PAUSE':
         return (
           <>
-            <GameCanvas 
+            <GameCanvas
               onGameStateChange={() => {}}
               playerClass={selectedClass}
               difficulty={selectedDifficulty}
+              gameState={gameState}
             />
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 100,
-              textAlign: 'center',
-              color: '#00ff88',
-              fontFamily: "'Orbitron', sans-serif",
-            }}>
+            <div
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 100,
+                textAlign: 'center',
+                color: '#00ff88',
+                fontFamily: "'Orbitron', sans-serif",
+              }}
+            >
               <h1 style={{ fontSize: '3rem', marginBottom: '20px' }}>PAUSED</h1>
               <p>Press ESC to resume</p>
             </div>
@@ -318,18 +376,22 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div id="app" style={{
-      width: '100vw',
-      height: '100vh',
-      overflow: 'hidden',
-      background: '#020408'
-    }}>
+    <div
+      id="app"
+      style={{
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        background: '#020408',
+      }}
+    >
       {renderContent()}
     </div>
   );
 };
 
-// Bootstrap
+// ─── Bootstrap ───────────────────────────────────────────────────────────────
+
 const container = document.getElementById('ui-root');
 if (container) {
   const root = createRoot(container);

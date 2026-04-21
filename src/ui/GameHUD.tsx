@@ -55,14 +55,14 @@ export const GameHUD: React.FC<HudProps> = (props) => {
 
       {/* Top Center: Timer */}
       <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }}>
-        <div style={{ fontSize: '2rem', color: '#fff', fontWeight: 'bold', letterSpacing: '2px' }}>{props.timer}</div>
-        <div style={{ fontSize: '0.7rem', color: Theme.colors.neonGreen, opacity: 0.6 }}>SYSTEM UPTIME</div>
+        <div style={{ fontSize: '2rem', color: '#fff', fontWeight: 'bold', letterSpacing: '2px' }}>{props.time ?? 0}</div>
+        <div style={{ fontSize: '0.7rem', color: Theme.colors.neonGreen, opacity: 0.6 }}>TIME</div>
       </div>
 
       {/* Top Right: Stats */}
       <div style={{ position: 'absolute', top: '20px', right: '20px', textAlign: 'right' }}>
         <div style={{ fontSize: '1.5rem', color: Theme.colors.neonGold }}>WAVE {props.wave}</div>
-        <div style={{ fontSize: '0.9rem', color: '#fff' }}>SCORE: {props.score.toLocaleString()}</div>
+        <div style={{ fontSize: '0.9rem', color: '#fff' }}>SCORE: {(props.score ?? 0).toLocaleString()}</div>
       </div>
     </div>
   );

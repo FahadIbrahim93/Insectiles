@@ -1,6 +1,8 @@
 import { Enemy as EnemyType } from '../data/types';
 import { ENEMIES } from '../data/constants';
 
+export type { Enemy } from '../data/types';
+
 export function makeEnemy(typeId: string, x: number, y: number): EnemyType {
   const def = ENEMIES[typeId] || ENEMIES['ant'];
   return {
@@ -14,7 +16,7 @@ export function makeEnemy(typeId: string, x: number, y: number): EnemyType {
     maxHp: def.hp,
     dmg: def.dmg,
     xp: def.xp,
-    sc: def.xp, // Score matching XP usually
+    sc: def.xp,
     elite: false,
     ranged: def.ranged || false,
     targetId: 'player',
@@ -22,5 +24,10 @@ export function makeEnemy(typeId: string, x: number, y: number): EnemyType {
     stunTime: 0,
     poison: 0,
     dead: false,
+    sepX: 0,
+    sepY: 0,
+    spd: def.spd,
+    wobble: 0,
+    wobbleSpd: 1.5 + Math.random() * 1.5,
   };
 }

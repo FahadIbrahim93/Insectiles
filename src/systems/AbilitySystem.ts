@@ -63,7 +63,7 @@ export class AbilitySystem {
   private executeScarabAbility(ctx: AbilityContext): void {
     const { player } = ctx;
     player.abilCooldown = 7.0;
-    player.shield = Math.min(player.maxHp * 0.5, player.shield + 20);
+    player.shield = Math.min(player.stats.maxHp * 0.5, player.shield + 20);
     this.audio.play('abil');
   }
 

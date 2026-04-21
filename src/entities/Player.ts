@@ -1,6 +1,9 @@
 import { Player as PlayerType, createDefaultPlayerStats } from '../data/types';
 import { CLASSES, WORLD_W, WORLD_H } from '../data/constants';
 
+export type { Player } from '../data/types';
+export { createDefaultPlayerStats };
+
 export function makePlayer(id: string): PlayerType {
   const def = CLASSES[id] || CLASSES['mantis'];
   return {
@@ -29,6 +32,7 @@ export function makePlayer(id: string): PlayerType {
     damageDealt: 0,
     timeAlive: 0,
     dead: false,
+    trail: [],
   };
 }
 

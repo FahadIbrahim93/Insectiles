@@ -6,6 +6,7 @@ interface UpgradeChoice {
   name: string;
   desc: string;
   icon?: string;
+  col?: string;
 }
 
 export const LevelUp: React.FC<{ 
@@ -44,15 +45,15 @@ export const LevelUp: React.FC<{
               width: '260px',
               padding: '40px 25px',
               background: 'rgba(255, 255, 255, 0.02)',
-              border: `1px solid ${u.col}44`,
+              border: `1px solid ${u.col ?? '#00ff88'}44`,
               cursor: 'pointer',
               transition: 'all 0.3s',
               textAlign: 'center'
             }}
-            onMouseOver={(e) => { e.currentTarget.style.background = `${u.col}11`; e.currentTarget.style.borderColor = u.col; e.currentTarget.style.transform = 'scale(1.05)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'; e.currentTarget.style.borderColor = `${u.col}44`; e.currentTarget.style.transform = 'scale(1)'; }}
+            onMouseOver={(e) => { e.currentTarget.style.background = `${u.col ?? '#00ff88'}11`; e.currentTarget.style.borderColor = u.col ?? '#00ff88'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'; e.currentTarget.style.borderColor = `${u.col ?? '#00ff88'}44`; e.currentTarget.style.transform = 'scale(1)'; }}
           >
-            <div style={{ width: '60px', height: '60px', border: `2px solid ${u.col}`, margin: '0 auto 20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: u.col, fontSize: '1.5rem' }}>+</div>
+            <div style={{ width: '60px', height: '60px', border: `2px solid ${u.col ?? '#00ff88'}`, margin: '0 auto 20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: u.col ?? '#00ff88', fontSize: '1.5rem' }}>+</div>
             <h3 style={{ color: '#fff', fontSize: '1.4rem', marginBottom: '10px' }}>{u.name}</h3>
             <p style={{ color: '#888', fontSize: '0.9rem' }}>{u.desc}</p>
           </div>

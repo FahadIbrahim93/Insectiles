@@ -71,6 +71,7 @@ export interface Player {
   damageDealt: number;
   timeAlive: number;
   dead: boolean;
+  trail: Array<{ x: number; y: number }>;
 }
 
 // ─── Enemy Types ──────────────────────────────────────────────────────
@@ -96,6 +97,12 @@ export interface Enemy {
   stunTime: number;
   poison: number;
   dead: boolean;
+  // Movement system state
+  sepX: number;
+  sepY: number;
+  spd: number;
+  wobble: number;
+  wobbleSpd: number;
 }
 
 // ─── Projectile Types ────────────────────────────────────────────────

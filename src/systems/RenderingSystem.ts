@@ -12,7 +12,7 @@ export class RenderingSystem {
   };
 
   private entitySprites = new Map<string, { g: Graphics, flash: number }>();
-  private camera = { x: 0, y: 0 };
+  private camera = { x: WORLD_W / 2, y: WORLD_H / 2 };
   private shake = { x: 0, y: 0, t: 0, i: 0 };
 
   constructor(private app: Application) {
@@ -56,8 +56,15 @@ export class RenderingSystem {
 
   public createGrid(): void {
     const g = new Graphics();
-    g.moveTo(0, 0); // Placeholder for grid logic to be restored if needed
-    // Simplified for audit speed
+    const cellSize = 110;
+    // Draw a subtle background grid for orientation
+    const w = 3200, h = 3200;
+    for (let x = 0; x <= w; x += cellSize) {
+      g.moveTo(x, 0).lineTo(x, h).stroke({ color: 0x00ff88, alpha: 0.04, width: 1 });
+    }
+    for (let y = 0; y <= h; y += cellSize) {
+      g.moveTo(0, y).lineTo(w, y).stroke({ color: 0x00ff88, alpha: 0.04, width: 1 });
+    }
     this.layers.bg.addChild(g);
   }
 
