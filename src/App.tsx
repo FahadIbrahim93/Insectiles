@@ -98,9 +98,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100%',
-        height: '100%',
+        width: '100vw',
+        height: '100vh',
         zIndex: 1,
+        background: '#020408',
       }}
     />
   );
@@ -395,11 +396,4 @@ export const App: React.FC = () => {
   );
 };
 
-// ─── Bootstrap ───────────────────────────────────────────────────────────────
-
-const container = document.getElementById('ui-root');
-if (container) {
-  const root = createRoot(container);
-  root.render(<App />);
-  console.log('[BOOTSTRAP] React App Initialized');
-}
+// ─── Main App ────────────────────────────────────────────────────────────────

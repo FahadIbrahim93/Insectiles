@@ -70,7 +70,8 @@ export class Engine {
 
         this.app = new Application();
         await this.app.init({
-            resizeTo: container,
+            width: container.clientWidth || window.innerWidth,
+            height: container.clientHeight || window.innerHeight,
             backgroundColor: config.backgroundColor,
             resolution: window.devicePixelRatio || 1,
             autoDensity: true,
@@ -79,6 +80,13 @@ export class Engine {
         console.log('[Engine.init] App inited, canvas:', this.app.canvas.width, 'x', this.app.canvas.height);
 
         container.appendChild(this.app.canvas);
+
+        // Ensure canvas fills container and stays sized correctly
+        this.app.canvas.style.position = 'absolute';
+        this.app.canvas.style.top = '0';
+        this.app.canvas.style.left = '0';
+        this.app.canvas.style.width = '100%';
+        this.app.canvas.style.height = '100%';
         
         this.renderer = new RenderingSystem(this.app);
         this.renderer.createGrid();
