@@ -66,6 +66,7 @@ export class Engine {
      */
     public async init(config: EngineConfig): Promise<void> {
         const container = document.getElementById(config.containerId) as HTMLElement;
+        console.log('[Engine.init] Container:', !!container, container?.getBoundingClientRect());
 
         this.app = new Application();
         await this.app.init({
@@ -75,6 +76,7 @@ export class Engine {
             autoDensity: true,
             antialias: true,
         });
+        console.log('[Engine.init] App inited, canvas:', this.app.canvas.width, 'x', this.app.canvas.height);
 
         container.appendChild(this.app.canvas);
         

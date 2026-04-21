@@ -43,16 +43,21 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     if (!shouldRun || !hasCanvas) return;
 
     const startEngine = async () => {
+      console.log('[GameCanvas] Starting engine...', { gameState, playerClass, difficulty });
       const engine = new Engine();
       engineRef.current = engine;
 
       try {
+        const container = document.getElementById(containerId);
+        console.log('[GameCanvas] Container found:', !!container, container?.getBoundingClientRect());
+
         await engine.init({
           containerId,
           backgroundColor: 0x020408,
         });
 
         const player = makePlayer(playerClass);
+        console.log('[GameCanvas] Player created:', { x: player.x, y: player.y, hp: player.hp });
         engine.setPlayer(player);
         engine.start();
         setEngineReady(true);
