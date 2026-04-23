@@ -167,3 +167,12 @@ g.moveTo(x1, y1).lineTo(x2, y2).stroke({ color: 0x00ff88, alpha: 0.04, width: 1 
 // Wrong (v7 API):
 g.lineStyle(1, 0x00ff88, 0.04); g.moveTo(x1, y1); g.lineTo(x2, y2);
 ```
+
+### PIXI v8 resizeTo captures 0x0 if container hasn't been laid out
+PIXI v8's `resizeTo: container` uses ResizeObserver internally, which fires on *changes* — not initial layout. If the container hasn't been painted yet, canvas ends up 0x0. Fix: use explicit `width`/`height` + CSS `position: absolute; width: 100%; height: 100%` on the canvas element after init.
+
+### Double createRoot() crashes React
+Both `main.ts` and `App.tsx` calling `createRoot()` on `#ui-root` causes: "createRoot() on a container that has already been passed to createRoot()". Only `main.ts` should bootstrap — `App.tsx` should export the component only.
+
+### Debugging canvas sizing
+Use puppeteer headless browser to get concrete DOM data: `canvas.width`, `canvas.height`, `getBoundingClientRect()`. A 0x0 canvas is the #1 cause of "game screen blank but no errors".
