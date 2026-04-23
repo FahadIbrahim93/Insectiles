@@ -1,0 +1,7 @@
+# Vercel Ignore
+# Ignore everything except the build output
+*
+!dist
+!vercel.json
+!package.json
+!tsconfig.json
